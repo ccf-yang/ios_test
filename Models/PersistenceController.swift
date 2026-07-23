@@ -15,8 +15,8 @@ class PersistenceController {
     
     let container: NSPersistentContainer
     
-    private init() {
-        // 程序化创建 Core Data Model
+    // 修改点：去掉了 private，让 App 层可以初始化
+    init() {
         let model = PersistenceController.createManagedObjectModel()
         container = NSPersistentContainer(name: "Model", managedObjectModel: model)
         
@@ -27,16 +27,12 @@ class PersistenceController {
         }
     }
     
-    // MARK: - 程序化生成数据库 Schema (替代 .xcdatamodeld)
     private static func createManagedObjectModel() -> NSManagedObjectModel {
         let model = NSManagedObjectModel()
-        
-        // 1. 创建 EventItem 实体
         let entity = NSEntityDescription()
         entity.name = "EventItem"
         entity.managedObjectClassName = "EventItem"
         
-        // 2. 创建属性
         let idAttr = NSAttributeDescription()
         idAttr.name = "id"
         idAttr.attributeType = .UUIDAttributeType
@@ -57,18 +53,13 @@ class PersistenceController {
         createdAtAttr.attributeType = .dateAttributeType
         createdAtAttr.isOptional = false
         
-        // 3. 绑定属性到实体
         entity.properties = [idAttr, eventDateAttr, contentAttr, createdAtAttr]
-        
-        // 4. 绑定实体到模型
         model.entities = [entity]
-        
         return model
     }
     
     // MARK: - CRUD 操作
     
-    // 保存数据
     func saveContext() {
         let context = container.viewContext
         if context.hasChanges {
@@ -76,12 +67,11 @@ class PersistenceController {
                 try context.save()
             } catch {
                 let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("Unresolved error \(nsError), \(nsError.userInfo)")
             }
         }
     }
     
-    // 新增记录
     func addEvent(date: Date, content: String) {
         let context = container.viewContext
         let newEvent = EventItem(context: context)
@@ -92,26 +82,20 @@ class PersistenceController {
         saveContext()
     }
     
-    // 删除记录
     func deleteEvent(event: EventItem) {
         let context = container.viewContext
         context.delete(event)
         saveContext()
     }
     
-    // 获取所有未来及当前的待办 (Tab3 使用)
     func fetchFutureEvents() -> [EventItem] {
         let context = container.viewContext
-        let fetchRequest: NSFetchRequest<EventItem> = EventItem.fetchRequest()
+        // 修改点：增加 as? 强转
+        let fetchRequest = EventItem.fetchRequest() as! NSFetchRequest<EventItem>
         
-        // 筛选条件: eventDate >= 当前时间
         let currentDate = Date()
-        let predicate = NSPredicate(format: "eventDate >= %@", currentDate as NSDate)
-        fetchRequest.predicate = predicate
-        
-        // 按时间升序排列 (最近到未来)
-        let sortDescriptor = NSSortDescriptor(key: "eventDate", ascending: true)
-        fetchRequest.sortDescriptors = [sortDescriptor]
+        fetchRequest.predicate = NSPredicate(format: "eventDate >= %@", currentDate as NSDate)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "eventDate", ascending: true)]
         
         do {
             return try context.fetch(fetchRequest)
@@ -121,32 +105,28 @@ class PersistenceController {
         }
     }
     
-    // 获取所有有记录的日期 (Tab1 日历打点使用)
+    // 修改点：直接返回 EventItem 数组，避免 NSDate 类型问题
     func fetchEventDates() -> [Date] {
         let context = container.viewContext
-        let fetchRequest: NSFetchRequest<NSDate> = NSFetchRequest(entityName: "EventItem")
-        fetchRequest.resultType = .dictionaryResultType
-        fetchRequest.propertiesToFetch = ["eventDate"]
+        let fetchRequest = EventItem.fetchRequest() as! NSFetchRequest<EventItem>
         
         do {
-            let results = try context.fetch(fetchRequest)
-            return results.compactMap { $0 as? Date }
+            let events = try context.fetch(fetchRequest)
+            return events.map { $0.eventDate }
         } catch {
             print("Failed to fetch event dates: \(error)")
             return []
         }
     }
     
-    // 获取某一天的所有记录 (Tab1 点击某天后弹出详情使用)
     func fetchEvents(for date: Date) -> [EventItem] {
         let context = container.viewContext
-        let fetchRequest: NSFetchRequest<EventItem> = EventItem.fetchRequest()
+        // 修改点：增加 as? 强转
+        let fetchRequest = EventItem.fetchRequest() as! NSFetchRequest<EventItem>
         
-        // 获取当天的 0:00 到 23:59
         let startOfDay = date.startOfDay()
         let endOfDay = date.endOfDay()
-        let predicate = NSPredicate(format: "eventDate >= %@ AND eventDate < %@", startOfDay as NSDate, endOfDay as NSDate)
-        fetchRequest.predicate = predicate
+        fetchRequest.predicate = NSPredicate(format: "eventDate >= %@ AND eventDate < %@", startOfDay as NSDate, endOfDay as NSDate)
         
         do {
             return try context.fetch(fetchRequest)
