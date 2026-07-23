@@ -16,13 +16,24 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v4
 
-      # 1. 使用更优雅的 maxim-lobanov/setup-xcode 指定版本
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.6.0' 
+          xcode-version: '26.6.0'
 
-      # 2. 缓存 SPM 依赖，加速后续构建（非常推荐的做法）
+      # 【新增步骤 1】：安装 xcodegen 工具
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # 【新增步骤 2】：根据 project.yml 自动生成 TodoReminder.xcodeproj
+      - name: Generate Xcode Project
+        run: |
+          echo "当前目录文件："
+          ls -la
+          xcodegen generate
+          echo "生成后的目录文件："
+          ls -la
+
       - name: Cache Swift Package Manager
         uses: actions/cache@v3
         with:
@@ -31,24 +42,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      # 3. 拉取 SPM 第三方库依赖
       - name: Resolve Swift Package dependencies
         env:
-          # 注入 GitHub Token 解决拉取第三方库时的 API 限流问题
           GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 打印当前 Xcode 和 Swift 环境信息，确认环境无异常
-          xcodebuild -version
-          swift --version
-          
-          echo "开始解析 SPM 依赖..."
           xcodebuild -resolvePackageDependencies \
             -project TodoReminder.xcodeproj \
             -scheme TodoReminder \
-            -clonedSourcePackagesDirPath ./SourcePackages \
-            -disableAutomaticPackageResolution
+            -clonedSourcePackagesDirPath ./SourcePackages
 
-      # 4. 构建 Archive (复用您之前的无签名参数，加上 SPM 目录指向)
       - name: Build Archive
         run: |
           xcodebuild archive \
@@ -62,7 +64,6 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      # 5. 生成导出 IPA 所需的 plist 配置
       - name: Create ExportOptions.plist
         run: |
           cat <<EOF > build/ExportOptions.plist
@@ -86,7 +87,6 @@ jobs:
           </plist>
           EOF
 
-      # 6. 导出无证书 IPA
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
@@ -97,7 +97,6 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      # 7. 上传构建产物供下载
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
