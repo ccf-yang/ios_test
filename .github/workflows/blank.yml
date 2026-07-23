@@ -7,32 +7,39 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    name: Build iOS IPA
+  build-ipa:
+    name: Build IPA on macOS
     runs-on: macos-latest
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout repository
+      - name: Checkout branch
         uses: actions/checkout@v4
 
-      # 自动解析 Package.resolved 并缓存 SPM 依赖，加速构建
+      # 1. 使用 maxim-lobanov/setup-xcode 指定版本
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.6.0' 
+
+      # 2. 缓存 SPM 依赖，加速后续构建（非常推荐的做法）
       - name: Cache Swift Package Manager
         uses: actions/cache@v3
         with:
-          path: .build
+          path: ./SourcePackages
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      - name: Select Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+      # 3. 拉取 SPM 第三方库依赖
+      - name: Resolve Swift Package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project TodoReminder.xcodeproj \
+            -scheme TodoReminder \
+            -clonedSourcePackagesDirPath ./SourcePackages
 
-      # 修改点：增加 resolve 步骤，并延长超时时间以应对网络拉取慢的情况
-      - name: Resolve Swift Package Manager Dependencies
-        run: xcodebuild -resolvePackageDependencies -project TodoReminder.xcodeproj -scheme TodoReminder
-        env:
-          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 利用 GitHub 内置 token 提高拉取速率
-
+      # 4. 构建 Archive (复用您之前的无签名参数，加上 SPM 目录指向)
       - name: Build Archive
         run: |
           xcodebuild archive \
@@ -41,10 +48,12 @@ jobs:
             -archivePath build/TodoReminder.xcarchive \
             -sdk iphoneos \
             -configuration Release \
+            -clonedSourcePackagesDirPath ./SourcePackages \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
+      # 5. 生成导出 IPA 所需的 plist 配置
       - name: Create ExportOptions.plist
         run: |
           cat <<EOF > build/ExportOptions.plist
@@ -68,6 +77,7 @@ jobs:
           </plist>
           EOF
 
+      # 6. 导出无证书 IPA
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
@@ -78,6 +88,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
+      # 7. 上传构建产物供下载
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
