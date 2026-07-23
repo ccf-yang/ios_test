@@ -16,7 +16,7 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v4
 
-      # 1. 使用 maxim-lobanov/setup-xcode 指定版本
+      # 1. 使用更优雅的 maxim-lobanov/setup-xcode 指定版本
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -33,11 +33,20 @@ jobs:
 
       # 3. 拉取 SPM 第三方库依赖
       - name: Resolve Swift Package dependencies
+        env:
+          # 注入 GitHub Token 解决拉取第三方库时的 API 限流问题
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 打印当前 Xcode 和 Swift 环境信息，确认环境无异常
+          xcodebuild -version
+          swift --version
+          
+          echo "开始解析 SPM 依赖..."
           xcodebuild -resolvePackageDependencies \
             -project TodoReminder.xcodeproj \
             -scheme TodoReminder \
-            -clonedSourcePackagesDirPath ./SourcePackages
+            -clonedSourcePackagesDirPath ./SourcePackages \
+            -disableAutomaticPackageResolution
 
       # 4. 构建 Archive (复用您之前的无签名参数，加上 SPM 目录指向)
       - name: Build Archive
