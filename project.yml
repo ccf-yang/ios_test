@@ -1,6 +1,6 @@
 name: TodoReminder
 options:
-  bundleIdPrefix: com.ccf
+  bundleIdPrefix: com.ccf-yang
   deploymentTarget:
     iOS: "16.2"
 packages:
@@ -15,15 +15,17 @@ targets:
       - path: App
       - path: Models
       - path: ViewModels
-      # 修改点：确保 Views 及其所有子目录的 swift 文件被包含
+      # 修改点：显式添加 Views 下的根级文件及子目录
       - path: Views
-        type: group
+      - path: Views/Calendar
+      - path: Views/AddRecord
+      - path: Views/FutureList
       - path: Utils
     dependencies:
       - package: FSCalendar
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ccf.TodoReminder
+        PRODUCT_BUNDLE_IDENTIFIER: com.ccf-yang.TodoReminder
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGNING_ALLOWED: NO
