@@ -11,10 +11,11 @@ struct EventDetailSheet: View {
         NavigationView {
             List(events, id: \.id) { event in
                 VStack(alignment: .leading) {
-                    Text(event.eventDate?.formatted(date: .omitted, time: .shortened) ?? "未知时间")
+                    // 修改点：去掉 eventDate 后面的 ?
+                    Text(event.eventDate.formatted(date: .omitted, time: .shortened))
                         .font(.caption)
                         .foregroundColor(.gray)
-                    Text(event.content ?? "")
+                    Text(event.content)
                         .font(.body)
                 }
             }
