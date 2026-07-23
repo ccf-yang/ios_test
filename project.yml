@@ -9,20 +9,10 @@ targets:
     platform: iOS
     sources:
       - path: App
-        excludes:
-          - "test.file"
       - path: Models
-        excludes:
-          - "test.file"
       - path: ViewModels
-        excludes:
-          - "test.file"
       - path: Views
-        excludes:
-          - "**/test.file"
       - path: Utils
-        excludes:
-          - "test.file"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ccf.TodoReminder
