@@ -11,6 +11,24 @@ class CalendarViewModel: ObservableObject {
     
     init() {
         fetchMarkedDates()
+        
+        // 监听全局广播：当新增数据保存成功时，立即刷新红点
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleDataChanged),
+            name: NSNotification.Name("EventDataChanged"),
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleDataChanged() {
+        DispatchQueue.main.async { [weak self] in
+            self?.fetchMarkedDates()
+        }
     }
     
     // 拉取所有有记录的日期

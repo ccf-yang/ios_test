@@ -2,13 +2,20 @@ import SwiftUI
 
 struct CalendarView: View {
     @StateObject private var viewModel = CalendarViewModel()
+    @State private var currentTime = Date() // 用于存储每秒更新的时间
+    
+    // 每秒触发一次的定时器
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
         NavigationView {
             VStack {
-                Text("当前系统时间: \(Date().formatted(date: .abbreviated, time: .standard))")
+                Text("当前系统时间: \(currentTime.formatted(date: .abbreviated, time: .standard))")
                     .font(.headline)
                     .padding()
+                    .onReceive(timer) { input in
+                        currentTime = input // 每秒更新时间
+                    }
                 
                 // 使用封装的 FSCalendar
                 FSCalendarWrapper(
@@ -24,7 +31,9 @@ struct CalendarView: View {
                 Spacer()
             }
             .navigationTitle("日历概览")
-            .sheet(isPresented: $viewModel.isShowingDetail) {
+            .sheet(isPresented: $viewModel.isShowingDetail, onDismiss: {
+                viewModel.fetchMarkedDates()
+            }) {
                 EventDetailSheet(events: viewModel.selectedDateEvents, date: viewModel.selectedDate)
             }
         }

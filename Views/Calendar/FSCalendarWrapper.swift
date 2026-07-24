@@ -30,6 +30,8 @@ struct FSCalendarWrapper: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: FSCalendar, context: Context) {
+        // 关键修改：强制将最新的数据同步给 Coordinator，并重新加载日历
+        context.coordinator.parent = self
         uiView.reloadData()
     }
     
