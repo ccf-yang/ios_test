@@ -8,7 +8,7 @@ struct FutureListView: View {
             List {
                 ForEach(viewModel.futureEvents, id: \.id) { event in
                     VStack(alignment: .leading) {
-                        Text(event.eventDate?.formatted(date: .abbreviated, time: .shortened) ?? "未知时间")
+                        Text(event.eventDate.formatted(date: .abbreviated, time: .shortened))
                             .font(.subheadline)
                             .foregroundColor(.gray)
                         Text(event.content ?? "")
