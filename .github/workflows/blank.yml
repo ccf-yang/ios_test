@@ -62,7 +62,8 @@ jobs:
             -clonedSourcePackagesDirPath ./SourcePackages \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
 
       - name: Create ExportOptions.plist
         run: |
@@ -77,6 +78,10 @@ jobs:
           <string>manual</string>
           <key>compileBitcode</key>
           <false/>
+          <key>iCloudContainerEnvironment</key>
+          <string></string>
+          <key>teamID</key>
+          <string></string>
           </dict>
           </plist>
           EOF
@@ -89,7 +94,8 @@ jobs:
             -exportOptionsPlist build/ExportOptions.plist \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
