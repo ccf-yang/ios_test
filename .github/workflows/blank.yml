@@ -68,6 +68,9 @@ jobs:
 
       - name: Create Unsigned IPA
         run: |
+          # 确保输出目录存在
+          mkdir -p build/output
+          
           # 创建 Payload 目录
           mkdir -p Payload
           
@@ -79,9 +82,6 @@ jobs:
           
           # 清理临时目录
           rm -rf Payload
-          
-          # 确保输出目录存在
-          mkdir -p build/output
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
