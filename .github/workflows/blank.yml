@@ -65,37 +65,23 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
 
-      - name: Create ExportOptions.plist
-        run: |
-          cat << 'EOF' > build/ExportOptions.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-          <key>method</key>
-          <string>development</string>
-          <key>signingStyle</key>
-          <string>manual</string>
-          <key>compileBitcode</key>
-          <false/>
-          <key>iCloudContainerEnvironment</key>
-          <string></string>
-          <key>teamID</key>
-          <string></string>
-          </dict>
-          </plist>
-          EOF
 
-      - name: Export IPA
+      - name: Create Unsigned IPA
         run: |
-          xcodebuild -exportArchive \
-            -archivePath build/TodoReminder.xcarchive \
-            -exportPath build/output \
-            -exportOptionsPlist build/ExportOptions.plist \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM=""
+          # 创建 Payload 目录
+          mkdir -p Payload
+          
+          # 从 xcarchive 中复制 .app 文件
+          cp -R build/TodoReminder.xcarchive/Products/Applications/TodoReminder.app Payload/
+          
+          # 打包成 IPA（本质是 zip 文件）
+          zip -r build/output/TodoReminder.ipa Payload
+          
+          # 清理临时目录
+          rm -rf Payload
+          
+          # 确保输出目录存在
+          mkdir -p build/output
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
